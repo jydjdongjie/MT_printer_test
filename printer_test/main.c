@@ -31,6 +31,10 @@ int main (int argc, const char *argv[])
 		print_interval_sec = atoi(argv[1]);
 	}
 
+	if (print_interval_sec < 10)
+	{
+		print_interval_sec = SEC_REPRINT_DEF;
+	}
 
 	printf("printer_test V0.2 - 2014.10.23pm\n"
 			"print_interval_sec = %ld\n", print_interval_sec);
@@ -41,7 +45,9 @@ int main (int argc, const char *argv[])
 		printf("Create the scan task failed!\n");
 		exit(1);
 	}
-	//printf("scan task create sucess!\n");
+
+	printf("scan task create sucess!\n");
+
 	ret = pthread_create(&tid_print, NULL, task_bt_print, NULL);
 	if (ret != 0)
 	{
@@ -49,7 +55,7 @@ int main (int argc, const char *argv[])
 		exit(1);
 	}
 
-	//printf("scan task create sucess!\n");
+	printf("scan task create sucess!\n");
 
 	while (1)
 	{
