@@ -27,6 +27,7 @@ static int bt_scan_do(const char *hci_dev, const char *key_str, const char *tabl
 void *task_bt_scan(void *parg)
 {
 	printf("Into task_bt_scan()\n");
+
 	while (1)
 	{
 		//scan the bluetooth devices named "美团外卖 "
@@ -35,7 +36,9 @@ void *task_bt_scan(void *parg)
 			printf("task_bt_scan %s return error!\n", MT_DB_TABLE);
 			break;
 		}
+
 		sleep(5);
+
 		if (bt_scan_do(SCAN_BT_DEV, SEATCH_KEY_STR_G, G_DB_TABLE) < 0)
 		{
 			printf("task_bt_scan %s return error!\n", G_DB_TABLE);
@@ -67,6 +70,7 @@ static int bt_scan_do(const char *hci_dev, const char *key_str, const char *tabl
 	}
 
 	dev_num = get_dev_list(hci_dev, key_str, str_tab);
+	printf("get_dev_list return %d\n", dev_num);
 	if (dev_num > 0)
 	{
 		//insert db
@@ -141,6 +145,7 @@ static int get_dev_list(const char *hci_dev, const char *key_str, char *recv[])
 			int len = strlen(p);
 
 			recv[count] = (char*)malloc(len+1);
+
 			if (recv[count] != NULL)
 			{
 				strcpy(recv[count],p);
@@ -155,7 +160,7 @@ static int get_dev_list(const char *hci_dev, const char *key_str, char *recv[])
 
 		memset(read_buff, 0, sizeof(read_buff));
 	}
-
+	printf("malloc count = %d\n", count);
 	return count;
 }
 
@@ -164,6 +169,8 @@ static int get_dev_list(const char *hci_dev, const char *key_str, char *recv[])
 static int free_malloc_mem(char *p_tab[], int count)
 {
 	int i ;
+
+	printf("free malloc mem count = %d\n", count);
 
 	for (i = 0; i < count; i++)
 	{

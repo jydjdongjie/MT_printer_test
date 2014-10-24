@@ -24,6 +24,7 @@ long int print_interval_sec = SEC_REPRINT_DEF;
 int main (int argc, const char *argv[])
 {
 	pthread_t tid_scan, tid_print;
+
 	int ret = 0;
 
 	if (argv[1] != NULL)
@@ -36,26 +37,26 @@ int main (int argc, const char *argv[])
 		print_interval_sec = SEC_REPRINT_DEF;
 	}
 
-	printf("printer_test V0.2 - 2014.10.23pm\n"
+	printf("printer_test V0.2 - 2014.10.24pm\n"
 			"print_interval_sec = %ld\n", print_interval_sec);
 
 	ret = pthread_create(&tid_scan, NULL, task_bt_scan, NULL);
 	if (ret != 0)
 	{
-		printf("Create the scan task failed!\n");
+		printf("Create the scan task failed! tid_scan = %d\n", (int)tid_scan);
 		exit(1);
 	}
 
 	printf("scan task create sucess!\n");
 
-	ret = pthread_create(&tid_print, NULL, task_bt_print, NULL);
-	if (ret != 0)
-	{
-		printf("Create the print task failed!\n");
-		exit(1);
-	}
-
-	printf("scan task create sucess!\n");
+//	ret = pthread_create(&tid_print, NULL, task_bt_print, NULL);
+//	if (ret != 0)
+//	{
+//		printf("Create the print task failed! tid_print = %d\n", (int)tid_print);
+//		exit(1);
+//	}
+//
+//	printf("scan task create sucess!\n");
 
 	while (1)
 	{
