@@ -11,18 +11,19 @@
 #include "db_handle.h"
 #include "bt_scan.h"
 #include <unistd.h>
+#include <error.h>
 
 //#define DEBUG_BT_SCAN
-#define SCAN_BT_DEV 		"hci0"
-#define SEARCH_KEY_STR		"美团外卖 "
-#define SEATCH_KEY_STR_G	"Gprinter "
-#define SCAN_DELAY_SEC		(5)
+//#define SCAN_BT_DEV 		"hci0"
+//#define SEARCH_KEY_STR		"美团外卖 "
+//#define SEATCH_KEY_STR_G	"Gprinter "
+//#define SCAN_DELAY_SEC		(5)
+extern int errno;
 
 static int get_dev_list(const char *hci_dev, const char *key_str, char *recv[]);
 static int free_malloc_mem(char *p_tab[], int count);
 static char * blank_process(char *str);
-static int bt_scan_do(const char *hci_dev, const char *key_str, const char *table);
-
+//static int bt_scan_do(const char *hci_dev, const char *key_str, const char *table);
 
 void *task_bt_scan(void *parg)
 {
@@ -53,7 +54,8 @@ void *task_bt_scan(void *parg)
 
 
 
-static int bt_scan_do(const char *hci_dev, const char *key_str, const char *table)
+//static int bt_scan_do(const char *hci_dev, const char *key_str, const char *table)
+int bt_scan_do(const char *hci_dev, const char *key_str, const char *table)
 {
 	//1.Get the result of hcitool scan
 	char *str_tab[128];
@@ -61,8 +63,10 @@ static int bt_scan_do(const char *hci_dev, const char *key_str, const char *tabl
 	int ret = 0;
 
 	printf("into bt_scan_main\n");
+
 	memset((void*)&str_tab[0], 0, 128*sizeof(str_tab[0]));
 
+	//pragma check not running error
 	if (!(hci_dev && key_str))
 	{
 		printf("Param error in bt_scan_main\n");
@@ -70,7 +74,7 @@ static int bt_scan_do(const char *hci_dev, const char *key_str, const char *tabl
 	}
 
 	dev_num = get_dev_list(hci_dev, key_str, str_tab);
-	printf("get_dev_list return %d\n", dev_num);
+//	printf("get_dev_list return %d\n", dev_num);
 	if (dev_num > 0)
 	{
 		//insert db
@@ -120,6 +124,7 @@ static int get_dev_list(const char *hci_dev, const char *key_str, char *recv[])
 	memset(read_buff, 0, sizeof(read_buff));
 	memset(tmpstr, 0, sizeof(tmpstr));
 
+	//parag check not running error
 	if (!(hci_dev && key_str && recv))
 	{
 		return -1;
@@ -131,7 +136,7 @@ static int get_dev_list(const char *hci_dev, const char *key_str, char *recv[])
 
 	if (fp_scan == NULL)
 	{
-		printf("popen error:fp_scan == NULL in get_dev_list\n");
+		printf("popen error:fp_scan == NULL in get_dev_list \n");
 		return -1;
 	}
 
@@ -161,6 +166,19 @@ static int get_dev_list(const char *hci_dev, const char *key_str, char *recv[])
 		memset(read_buff, 0, sizeof(read_buff));
 	}
 	printf("malloc count = %d\n", count);
+
+	////
+	{
+		int i;
+
+		for (i = 0; i < count; i++)
+		{
+			printf("DEV[%d]:%s\n", i+1, recv[i]);
+		}
+	}
+	////
+
+	pclose(fp_scan);
 	return count;
 }
 

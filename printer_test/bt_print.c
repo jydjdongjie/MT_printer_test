@@ -13,12 +13,12 @@
 #include "esc_deal.h"
 #include "db_handle.h"
 
-#define PRINT_DELAY_SEC (1)
-#define PRINT_BT_DEV	"hci1"
-#define PRINT_MT_CN	"美团外卖 "
-#define PRINT_G_EN "Gprinter"
+//#define PRINT_DELAY_SEC (1)
+//#define PRINT_BT_DEV	"hci1"
+//#define PRINT_MT_CN	"美团外卖 "
+//#define PRINT_G_EN "Gprinter"
 
-static int bt_print_do(const char *hci_dev, const char *key_str, const char *db_name, const char *db_table);
+//static int bt_print_do(const char *hci_dev, const char *key_str, const char *db_name, const char *db_table);
 static void mac_process(char *des_mac, const char *src_mac);
 
 void *task_bt_print(void *parg)
@@ -31,14 +31,14 @@ void *task_bt_print(void *parg)
 			printf("bt_print_task exit with error\n");
 			break;//error
 		}
-		//sleep(PRINT_DELAY_SEC);
+		sleep(PRINT_DELAY_SEC);
 
 		if (bt_print_do(PRINT_BT_DEV, PRINT_G_EN, BT_DB_NAME, G_DB_TABLE) < 0)
 		{
 			printf("bt_print_task exit with error\n");
 			break;//error
 		}
-		//sleep(PRINT_DELAY_SEC);
+		sleep(PRINT_DELAY_SEC);
 	}
 
 	return NULL;
@@ -61,7 +61,8 @@ static void mac_process(char *des_mac, const char *src_mac)
 }
 
 
-static int bt_print_do(const char *hci_dev, const char *key_str, const char *db_name, const char *db_table)
+//static int bt_print_do(const char *hci_dev, const char *key_str, const char *db_name, const char *db_table)
+int bt_print_do(const char *hci_dev, const char *key_str, const char *db_name, const char *db_table)
 {
 	int ret = 0;
 	bt_dev_element_t element;
@@ -85,7 +86,22 @@ static int bt_print_do(const char *hci_dev, const char *key_str, const char *db_
 		char read_buff[256];
 
 		memset(read_buff, 0, sizeof(read_buff));
-		sprintf(tmp_buff, "sdptool -i %s add --channel=1 SP", PRINT_BT_DEV);
+
+		//system("rfcomm -i hci1 release /dev/rfcomm0");//try to release the rfcomm0
+		//system("rfcomm -i hci0 release /dev/rfcomm0");//try to release the rfcomm0
+
+		//release the dev rfcomm0
+		sprintf(tmp_buff, "rfcomm -i %s release /dev/rfcomm0", hci_dev);
+		fp_connect = popen(tmp_buff, "r");
+		if (fp_connect == NULL)
+		{
+			printf("do %s ]error\n", tmp_buff);
+			return 0;
+		}
+		pclose(fp_connect);
+
+		//sdptool
+		sprintf(tmp_buff, "sdptool -i %s add --channel=1 SP", hci_dev);
 		fp_connect = popen(tmp_buff, "r");
 		if (fp_connect == NULL)
 		{
@@ -96,28 +112,35 @@ static int bt_print_do(const char *hci_dev, const char *key_str, const char *db_
 		if ((fgets(read_buff, sizeof(read_buff), fp_connect) == NULL) || (NULL == strstr(read_buff, "Serial Port service registered")))
 		{
 			printf("sdptool return error\n");
+			pclose(fp_connect);
 			return 0;
 		}
+		pclose(fp_connect);
 
-		system("rfcomm -i hci1 release /dev/rfcomm0");
-		sprintf(tmp_buff, "rfcomm -i %s bind /dev/rfcomm0 %s 1", PRINT_BT_DEV, element.bt_mac);
+		//bind
+		sprintf(tmp_buff, "rfcomm -i %s bind /dev/rfcomm0 %s 1", hci_dev, element.bt_mac);
 		fp_connect = popen(tmp_buff, "r");
 		if (fp_connect == NULL)
 		{
 			printf("do rfcomm error\n");
-			return -1;
+			return 0;//return -1;
 		}
 
 		if (fgets(read_buff, sizeof(read_buff), fp_connect))
 		{
 			printf("error:%s", read_buff);
+			pclose(fp_connect);
 			update_flag_to_db(-1, &element, db_name, db_table);
 			return 0;
 		}
+		pclose(fp_connect);
+
 
 		if (open_port("/dev/rfcomm0") < 0)
 		{
-			system("rfcomm -i hci1 release /dev/rfcomm0");
+			sprintf(tmp_buff, "rfcomm -i %s release /dev/rfcomm0", hci_dev);
+			system(tmp_buff);
+//			system("rfcomm -i hci1 release /dev/rfcomm0");
 			update_flag_to_db(-1, &element, db_name, db_table);
 			return 0;
 		}
@@ -182,7 +205,10 @@ static int bt_print_do(const char *hci_dev, const char *key_str, const char *db_
 		line_feed();
 		close_port();
 
-		system("rfcomm release /dev/rfcomm0");
+		usleep(200000);
+		sprintf(tmp_buff, "rfcomm -i %s release /dev/rfcomm0", hci_dev);
+		system(tmp_buff);
+//		system("rfcomm -i hci0 release /dev/rfcomm0");
 		update_flag_to_db(1, &element, db_name, db_table);
 		ret = 0;
 		usleep(500000);
@@ -196,7 +222,49 @@ static int bt_print_do(const char *hci_dev, const char *key_str, const char *db_
 	return ret;
 }
 
+int get_local_bt_dev(char *pdev, int cmd)
+{
+	char read_buff[512];
 
+	FILE *fp_connect = NULL;
+
+	if (pdev  == NULL)
+	{
+		return -1;
+	}
+
+	fp_connect = popen("hcitool dev", "r");
+	if (fp_connect == NULL)
+	{
+		return -1;
+	}
+
+	if (fgets(read_buff, sizeof(read_buff), fp_connect) == NULL)
+	{
+
+		pclose(fp_connect);
+
+		return -1;
+	}
+
+	read_buff[500] = 0;
+
+	if (strstr(read_buff, "hci0"))
+	{
+		strcpy(pdev, "hci0");
+	}
+	else
+	{
+		if (strstr(read_buff, "hci1"))
+		{
+			strcpy(pdev, "hci1");
+		}
+	}
+
+	pclose(fp_connect);
+
+	return 0;
+}
 
 
 

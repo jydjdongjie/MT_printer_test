@@ -44,7 +44,7 @@ int insert_new_to_db(const char *db_name, const char *list_name, char *p_tab[], 
 	{
 		db_close(db);
 		printf("Error in insert_to_db at sqlite3_open\n");
-		return -1;
+		return 0;//-1;
 	}
 
 	memset(sql_buf, '\0', 128);
@@ -56,7 +56,8 @@ int insert_new_to_db(const char *db_name, const char *list_name, char *p_tab[], 
 	if (rc != SQLITE_OK && (strstr(zErrMsg, "already exists") == NULL))
 	{
 		printf("Sqlite3 Error [%d],Create table return :%s\n", rc, zErrMsg);
-		exit(1);
+		db_close(db);
+		return 0;//exit(1);
 	}
 
 	for (i = 0; i < count; i++)
@@ -148,7 +149,7 @@ int get_new_from_db(int cmd, bt_dev_element_t *p_element, const char *db_name, c
 	{
 		db_close(db);
 		printf("Error in get_new_from_db at sqlite3_open\n");
-		return -1;
+		return 0;//return -1;
 	}
 
 	memset(sql_buf, '\0', 128);
